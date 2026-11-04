@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Incident Context Copilot">
+  <rect width="128" height="128" rx="28" fill="#0C66E4"/>
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="64" cy="64" r="8" fill="#FFFFFF"/>
+  <path d="M64 30v12M64 86v12M30 64h12M86 64h12" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M46 78l28-28" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+</svg>

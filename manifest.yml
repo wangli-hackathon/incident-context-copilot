@@ -1,0 +1,195 @@
+# Incident Context Copilot — Codegeist 2026
+# Replace app.id by running `forge register` before the first deploy.
+# The id below is a placeholder so the manifest parses without an Atlassian login.
+
+modules:
+  jira:issuePanel:
+    - key: incident-context-panel
+      resource: panel
+      resolver:
+        function: resolver
+      render: native
+      title: Incident Context
+      icon: resource:assets;icon.svg
+      displayConditions:
+        or:
+          - issueType: Bug
+          - issueType: Incident
+          - issueType: Problem
+          - issueType: "[System] Incident"
+
+  rovo:agent:
+    - key: incident-context-agent
+      name: Incident Context Copilot
+      description: Ranks likely causes, an owner, and the next actions for a bug or incident.
+      icon: resource:assets;icon.svg
+      prompt: |
+        You are Incident Context Copilot for software teams handling Jira bugs and incidents.
+        When the user is viewing a work item, or names an issue key, call gather-incident-context first.
+        Use rank-likely-causes, suggest-assignee, build-action-checklist, find-similar-incidents, or find-runbooks when they ask for only that part.
+        Prefer tool results over your own guesses. Every cause, person, commit, pipeline, and page you mention must appear in a tool result.
+        If a list is empty, say what evidence is missing. Do not invent a deployment, runbook, or owner.
+        You have no write actions. Do not claim that you assigned, transitioned, or commented on the work item.
+        If meta.source is deterministic, say the brief was ranked from linked evidence without a model rewrite.
+        Keep the reply short: the leading cause, who should own it, and the checklist items marked now.
+      conversationStarters:
+        - What are the likely causes of this incident?
+        - Who should own this bug?
+        - Give me the response checklist and the runbook.
+      actions:
+        - gather-incident-context
+        - rank-likely-causes
+        - suggest-assignee
+        - build-action-checklist
+        - find-similar-incidents
+        - find-runbooks
+      skills:
+        - incident-context
+      followUpPrompt: |
+        Ask if they want the runbook steps or a short customer-facing status note based on the same evidence.
+
+  rovo:skill:
+    - key: incident-context
+      source:
+        dir: skills/incident-context
+      dependencies:
+        tools:
+          - gather-incident-context
+          - rank-likely-causes
+          - suggest-assignee
+          - build-action-checklist
+          - find-similar-incidents
+          - find-runbooks
+
+  rovo:mcp:
+    - key: incident-context-mcp
+      name: Incident Context
+      tools:
+        - gather-incident-context
+        - rank-likely-causes
+        - suggest-assignee
+        - build-action-checklist
+        - find-similar-incidents
+        - find-runbooks
+
+  action:
+    - key: gather-incident-context
+      name: Gather incident context
+      function: actions
+      actionVerb: GET
+      description: >
+        Read the Jira work item, linked Bitbucket commits, pull requests, and pipelines,
+        Confluence runbooks, and similar resolved issues, then return ranked causes,
+        a suggested assignee, and a checklist. Read-only. Does not edit Jira.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+        useLlm:
+          title: Use Forge LLM
+          type: boolean
+          required: false
+          description: When true, ask Forge LLM to rewrite the brief without adding evidence. Defaults to false so the action runs without LLM quota.
+    - key: rank-likely-causes
+      name: Rank likely causes
+      function: actions
+      actionVerb: GET
+      description: >
+        Rank the likely root causes of a Jira bug or incident from commits, pull requests,
+        pipeline runs, and similar issues. Returns only causes backed by fetched evidence.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+    - key: suggest-assignee
+      name: Suggest assignee
+      function: actions
+      actionVerb: GET
+      description: >
+        Suggest who should own a bug or incident based on who authored the related code
+        and who resolved similar issues. Does not assign the work item.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+    - key: build-action-checklist
+      name: Build action checklist
+      function: actions
+      actionVerb: GET
+      description: >
+        Build an ordered incident checklist from the gathered evidence, including impact,
+        a failed deploy, the suggested owner, and links to the runbook or similar issues.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+    - key: find-similar-incidents
+      name: Find similar incidents
+      function: actions
+      actionVerb: GET
+      description: >
+        Search Jira with JQL text terms taken from the work item and return similar bugs,
+        incidents, and problems, including who resolved them when history is available.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+    - key: find-runbooks
+      name: Find runbooks
+      function: actions
+      actionVerb: GET
+      description: >
+        Search Confluence for runbook pages that match the distinctive words in a Jira bug or incident.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+
+  llm:
+    - key: incident-llm
+      model:
+        - claude
+
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: actions
+      handler: index.actionHandler
+
+resources:
+  - key: panel
+    path: src/frontend/index.jsx
+  - key: assets
+    path: static
+
+permissions:
+  scopes:
+    - storage:app
+    - read:jira-work
+    - read:jira-user
+    - search:confluence
+    - read:page:confluence
+    - read:repository:bitbucket
+    - read:pullrequest:bitbucket
+    - read:pipeline:bitbucket
+
+app:
+  id: ari:cloud:ecosystem::app/11111111-1111-4111-8111-111111111111
+  runtime:
+    name: nodejs24.x
+    memoryMB: 512
+    architecture: arm64
+  licensing:
+    enabled: false
