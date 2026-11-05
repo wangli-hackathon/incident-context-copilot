@@ -21,7 +21,8 @@ modules:
   rovo:agent:
     - key: incident-context-agent
       name: Incident Context Copilot
-      description: Ranks likely causes, an owner, and the next actions for a bug or incident.
+      description: Ranks likely causes, an owner, and the next actions for a bug or
+        incident.
       icon: resource:assets;icon.svg
       prompt: |
         You are Incident Context Copilot for software teams handling Jira bugs and incidents.
@@ -78,84 +79,97 @@ modules:
       function: actions
       actionVerb: GET
       description: >
-        Read the Jira work item, linked Bitbucket commits, pull requests, and pipelines,
-        Confluence runbooks, and similar resolved issues, then return ranked causes,
-        a suggested assignee, and a checklist. Read-only. Does not edit Jira.
+        Read the Jira work item, linked Bitbucket commits, pull requests, and
+        pipelines, Confluence runbooks, and similar resolved issues, then return
+        ranked causes, a suggested assignee, and a checklist. Read-only. Does
+        not edit Jira.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
         useLlm:
           title: Use Forge LLM
           type: boolean
           required: false
-          description: When true, ask Forge LLM to rewrite the brief without adding evidence. Defaults to false so the action runs without LLM quota.
+          description: When true, ask Forge LLM to rewrite the brief without adding
+            evidence. Defaults to false so the action runs without LLM quota.
     - key: rank-likely-causes
       name: Rank likely causes
       function: actions
       actionVerb: GET
       description: >
-        Rank the likely root causes of a Jira bug or incident from commits, pull requests,
-        pipeline runs, and similar issues. Returns only causes backed by fetched evidence.
+        Rank the likely root causes of a Jira bug or incident from commits, pull
+        requests, pipeline runs, and similar issues. Returns only causes backed
+        by fetched evidence.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
     - key: suggest-assignee
       name: Suggest assignee
       function: actions
       actionVerb: GET
       description: >
-        Suggest who should own a bug or incident based on who authored the related code
-        and who resolved similar issues. Does not assign the work item.
+        Suggest who should own a bug or incident based on who authored the
+        related code and who resolved similar issues. Does not assign the work
+        item.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
     - key: build-action-checklist
       name: Build action checklist
       function: actions
       actionVerb: GET
       description: >
-        Build an ordered incident checklist from the gathered evidence, including impact,
-        a failed deploy, the suggested owner, and links to the runbook or similar issues.
+        Build an ordered incident checklist from the gathered evidence,
+        including impact, a failed deploy, the suggested owner, and links to the
+        runbook or similar issues.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
     - key: find-similar-incidents
       name: Find similar incidents
       function: actions
       actionVerb: GET
       description: >
-        Search Jira with JQL text terms taken from the work item and return similar bugs,
-        incidents, and problems, including who resolved them when history is available.
+        Search Jira with JQL text terms taken from the work item and return
+        similar bugs, incidents, and problems, including who resolved them when
+        history is available.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
     - key: find-runbooks
       name: Find runbooks
       function: actions
       actionVerb: GET
       description: >
-        Search Confluence for runbook pages that match the distinctive words in a Jira bug or incident.
+        Search Confluence for runbook pages that match the distinctive words in
+        a Jira bug or incident.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key such as PAY-204. If omitted, the work item currently being viewed is used.
+          description: Jira issue key such as PAY-204. If omitted, the work item currently
+            being viewed is used.
 
   llm:
     - key: incident-llm
@@ -176,17 +190,17 @@ resources:
 
 permissions:
   scopes:
+    # Bitbucket workspace scopes cannot ship with Jira/Confluence site scopes
+    # (Forge MANIFEST_INVALID_RULE / ECO-329). Live Bitbucket reads degrade to
+    # notes; demos use Load sample incident.
     - storage:app
     - read:jira-work
     - read:jira-user
     - search:confluence
     - read:page:confluence
-    - read:repository:bitbucket
-    - read:pullrequest:bitbucket
-    - read:pipeline:bitbucket
 
 app:
-  id: ari:cloud:ecosystem::app/11111111-1111-4111-8111-111111111111
+  id: ari:cloud:ecosystem::app/c578bc98-a306-4530-810d-4c027725c025
   runtime:
     name: nodejs24.x
     memoryMB: 512

@@ -43,7 +43,7 @@ test('every action is read-only and points at the shared handler', () => {
   assert.equal(handlers.actions, 'index.actionHandler');
 });
 
-test('scopes stay read-only and include Jira, Confluence, Bitbucket, and storage', () => {
+test('scopes stay read-only and include Jira, Confluence, and storage', () => {
   const scopes = manifest.permissions.scopes;
   for (const scope of [
     'storage:app',
@@ -51,12 +51,11 @@ test('scopes stay read-only and include Jira, Confluence, Bitbucket, and storage
     'read:jira-user',
     'search:confluence',
     'read:page:confluence',
-    'read:repository:bitbucket',
-    'read:pullrequest:bitbucket',
-    'read:pipeline:bitbucket',
   ]) {
     assert.ok(scopes.includes(scope), scope);
   }
+  // Bitbucket workspace scopes cannot ship with site scopes (Forge platform).
+  assert.equal(scopes.some((scope) => scope.includes('bitbucket')), false);
   assert.equal(scopes.some((scope) => scope.startsWith('write:') || scope.startsWith('delete:')), false);
 });
 
