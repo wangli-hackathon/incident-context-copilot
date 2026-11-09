@@ -1,6 +1,8 @@
 # Incident Context Copilot
 
-Incident Context Copilot is an Atlassian Forge app for the Codegeist 2026 hackathon. Open a Jira bug or incident and it gathers the evidence already around that work item, then ranks likely causes, suggests who should own it, and writes the next checklist.
+Incident Context Copilot is an Atlassian Forge app for the Codegeist 2026 hackathon. Source: [github.com/wangli-hackathon/incident-context-copilot](https://github.com/wangli-hackathon/incident-context-copilot).
+
+Open a Jira bug or incident and it gathers the evidence already around that work item, then ranks likely causes, suggests who should own it, and writes the next checklist.
 
 The same analysis is available in three places:
 
@@ -198,3 +200,7 @@ This environment has no Atlassian credentials, so nobody has registered, deploye
 7. Record the video from `DEMO_SCRIPT.md` and paste `DEVPOST.md` into Devpost before 23 December 2026
 
 A site admin must approve the install. Rovo and external MCP availability also depend on that site's Rovo and admin settings.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
