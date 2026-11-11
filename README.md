@@ -17,7 +17,7 @@ The ranker is deterministic. Forge LLM is an optional rewrite that is not allowe
 - Reads the Jira work item, its comments, links, and remote links.
 - Searches similar bugs, incidents, and problems with JQL, and notes who last moved a resolved match to Done.
 - Searches Confluence for runbook pages with CQL.
-- Reads Bitbucket commits, pull requests, and recent pipelines for a repository saved on the project, or discovered from a Bitbucket URL already on the work item.
+- Has a Bitbucket collector for commits, pull requests, and recent pipelines. **The deployed build does not request Bitbucket scopes** (see [Current deployment](#current-deployment)), so on a live site the code and deploy tabs show a note instead of live Bitbucket data. **Load sample incident** shows the full code-and-deploy story.
 - Ranks failed production pipelines, hotfixes that touch a file named in the stack, open pull requests, and similar resolved issues. Weak or unrelated changes stay in the evidence tabs and out of the ranking.
 - Suggests an assignee from the people who authored that code or resolved the similar issues. It does not assign the work item.
 - Builds a checklist: confirm impact, inspect a failed deploy, assign an owner, then review the commit, pull request, runbook, and past resolution.
@@ -63,7 +63,7 @@ flowchart LR
   LLM -->|invalid or unavailable| Rank
 ```
 
-Jira's development panel is not a supported Forge API. The app does not call `/rest/dev-status`. It reads Bitbucket directly, plus any deployment-shaped remote link already on the work item. Pipeline runs on `main` are treated as production deployments.
+Jira's development panel is not a supported Forge API. The app does not call `/rest/dev-status`. Its Bitbucket collector reads Bitbucket directly (not live in the current deployment; see below), plus any deployment-shaped remote link already on the work item. Pipeline runs on `main` are treated as production deployments.
 
 Confidence is a sum of explicit weights (a failed production pipeline that names the issue key scores higher than an old unrelated commit). The weights are in `skills/incident-context/references/evidence-rules.md` and covered by unit tests. Causes under 25 are omitted from the ranking.
 
@@ -94,21 +94,19 @@ Node 20 or newer. The tests do not need Atlassian credentials. They cover rankin
 
 ## Install for judges
 
-You need the Forge CLI, an Atlassian account, and a site with Jira. Bitbucket and Confluence on the same site make the code and runbook sections live. Without them, those sections show a warning and the rest of the brief still renders. Use **Load sample incident** if the site has no history yet.
+The simplest path is the installation link on the Devpost submission page: a site admin opens it, picks a site, and installs on Jira (and Confluence, for runbook search). Use **Load sample incident** if the site has no incident history.
 
-`forge lint` from the CLI asks you to log in first. Before this project was handed over, the manifest was validated with `@forge/manifest` and the client-side `@forge/lint` rules (the same ones `forge lint` runs locally) reported no issues. After you log in, run `forge lint` yourself.
+To deploy your own copy instead, you need the Forge CLI, an Atlassian account, and a site with Jira. Confluence on the same site makes the runbook section live. Without it, that section shows a warning and the rest of the brief still renders.
 
-### 1. Register
+### 1. Register your own copy
 
-The committed `app.id` is a placeholder. `forge register` replaces it. Do this before the first deploy.
+The committed `app.id` belongs to the author's registered app. To deploy your own copy, run `forge register`, which replaces it.
 
 ```bash
 npm install -g @forge/cli@15
 forge login
 forge register
 ```
-
-Accept the prompts. The command rewrites `app.id` in `manifest.yml`.
 
 ### 2. Deploy
 
@@ -130,12 +128,13 @@ Or, when you already know the site:
 forge install --site your-site.atlassian.net --product jira --environment development
 ```
 
-Accept the scopes. They are all read, plus `storage:app` for the saved Bitbucket repository:
+Accept the scopes. They are all read, plus `storage:app` for the saved repository setting:
 
 - `read:jira-work`, `read:jira-user`
 - `search:confluence`, `read:page:confluence`
-- `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `read:pipeline:bitbucket`
 - `storage:app`
+
+Bitbucket scopes are not in the manifest. See [Current deployment](#current-deployment).
 
 Later deploys:
 
@@ -153,10 +152,9 @@ If your site uses another type name, add it under `displayConditions` in `manife
 In the panel:
 
 1. Click **Incident Context**.
-2. Save the Bitbucket repository as `workspace` and `repository` slug. If Bitbucket returns 404, paste the workspace UUID from Bitbucket settings. `requestBitbucket` is documented to prefer a workspace id.
-3. Refresh. Review causes, the suggested owner, and the checklist.
+2. Click **Load sample incident** to see the full PAY-204 story through the real ranker, or review the live brief built from Jira and Confluence. The repository form is still in the panel, but with the current scopes Bitbucket reads return a note rather than data.
+3. Review causes, the suggested owner, and the checklist.
 4. Leave **Enhance with Forge LLM** off for a quota-free demo. Turn it on only if the developer account can pay for Forge LLM. Billing for Forge LLMs started on 1 June 2026. There is no free quota. The model id is `claude-sonnet-4-6` in `src/lib/constants.js`.
-5. **Load sample incident** if you want the scripted PAY-204 story.
 
 ### 5. Rovo agent
 
@@ -187,19 +185,16 @@ DEVPOST.md                   Submission draft
 DEMO_SCRIPT.md               Video script, under three minutes
 ```
 
-## What still needs an Atlassian account
+## Current deployment
 
-This environment has no Atlassian credentials, so nobody has registered, deployed, or installed the app, and nobody has clicked it inside Jira. After you log in, the remaining steps are:
+As of 11 November 2026:
 
-1. `forge login`
-2. `forge register` so `app.id` is a real app
-3. `forge lint` if you want the CLI's own report, including any server-side checks that need the network
-4. `forge deploy` and `forge install` on a site whose admin accepts the scopes
-5. Confirm the panel on a Bug, the Rovo agent in Ask Rovo, and the MCP tools in Rovo Studio
-6. Decide whether to turn on Forge LLM. The default path does not call it
-7. Record the video from `DEMO_SCRIPT.md` and paste `DEVPOST.md` into Devpost before 23 December 2026
-
-A site admin must approve the install. Rovo and external MCP availability also depend on that site's Rovo and admin settings.
+- App id `c578bc98-a306-4530-810d-4c027725c025` is registered.
+- Major version 2 is deployed to the **development** environment and installed on `wangli-codegeist.atlassian.net` (Jira and Confluence). Version 2.0.0 is also deployed to the **production** environment, which is the one the installation link uses.
+- `forge lint` reports no issues. Forge reports the production version as eligible for Runs on Atlassian; the badge itself is granted by Atlassian.
+- **Bitbucket is not live.** Forge rejects a manifest that mixes Bitbucket workspace scopes with Jira and Confluence site scopes (`MANIFEST_INVALID_RULE`), so the Bitbucket scopes were removed to ship the panel, the Rovo agent, and the MCP tools. The Bitbucket collector and its tests remain in the code; on a live site it degrades to a note. Code and deploy evidence in the demo comes from **Load sample incident**, which runs the frozen PAY-204 story through the same ranker.
+- Forge LLM is off by default. Forge LLM has no free quota, so the demo does not use it.
+- Rovo agent and MCP tool availability depend on the installing site's Rovo and admin settings.
 
 ## License
 
